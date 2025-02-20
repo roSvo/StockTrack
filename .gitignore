@@ -1,0 +1,55 @@
+*# Qt specific
+*.pro.user
+*.pro.user.*
+*.qmake.stash
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+Makefile*
+*build-*
+.qmake.cache
+.qmake.stash
+*.txt.user
+*.user
+
+# Build directories
+**/build/
+debug/
+release/
+[Bb]uild*/
+[Dd]ebug*/
+[Rr]elease*/
+
+# Compiled files
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.lib
+*.a
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env/
+.venv/
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+.directory
+.Trash-*
+Thumbs.db

@@ -1,0 +1,43 @@
+cmake_minimum_required(VERSION 3.16)
+project(StockTrackProtocol VERSION 0.1 LANGUAGES CXX)
+
+#Enable C++17 as required
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Debug messages
+message(STATUS "Starting CMake configuration...")
+
+# Find Python
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+if(Python3_FOUND)
+    message(STATUS "Found Python: ${Python3_VERSION}")
+    message(STATUS "Python Include: ${Python3_INCLUDE_DIRS}")
+endif()
+
+# Set pybind11 path explicitly for pip installation
+execute_process(
+    COMMAND python3 -c "import pybind11; print(pybind11.get_cmake_dir())"
+    OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+message(STATUS "pybind11 CMake dir: ${PYBIND11_CMAKE_DIR}")
+
+set(pybind11_DIR ${PYBIND11_CMAKE_DIR})
+find_package(pybind11 CONFIG REQUIRED)
+
+# Create Python module
+pybind11_add_module(stockprotocol MODULE
+    src/python_bindings.cpp
+    src/stockprotocol.cpp
+)
+
+# Install to the correct directory (just one level up)
+install(TARGETS stockprotocol
+    LIBRARY DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/.."    # Changed from ../.. to ..
+    RUNTIME DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/.."
+    RENAME "stockprotocol.so"    # Also simplified the name
+)
+
+include(GNUInstallDirs)
