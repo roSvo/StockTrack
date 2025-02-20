@@ -36,7 +36,7 @@ PYBIND11_MODULE(stockprotocol, m) {
     m.def("format_server_response",
           static_cast<std::string (*)(MessageType)>(&StockTrack::Protocol::FormatServerResponse));
     m.def("format_server_response",
-          static_cast<std::string (*)(MessageType, const std::string&, std::vector<std::pair<int, double>>)>(&StockTrack::Protocol::FormatServerResponse));
+          static_cast<std::string (*)(MessageType, const std::string&, double, std::vector<std::pair<int, double>>)>(&StockTrack::Protocol::FormatServerResponse));
     m.def("parse_message", &StockTrack::Protocol::ParseMessage);
     m.def("format_error", &StockTrack::Protocol::FormatError);
 }

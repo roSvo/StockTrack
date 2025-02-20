@@ -85,7 +85,7 @@ public:
                AddField("NAME", AddMultipleNames(p_stockName, p_remainingNames...));
     }
     //Example: PRICE_HISTORY / CURRENT_PRICE "Apple":"1100""150.50","1200""151.00"
-    static std::string FormatServerResponse(MessageType p_messageType, const std::string& p_stockName, std::vector<std::pair<int, double>> p_prices);
+    static std::string FormatServerResponse(MessageType p_messageType, const std::string& p_stockName, double p_acquisitionPrice, std::vector<std::pair<int, double>> p_prices);
 
     static std::string FormatError(std::string& p_errorMessage);
 
