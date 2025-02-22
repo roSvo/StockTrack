@@ -19,6 +19,17 @@ RequestHandler::RequestHandler(QObject* parent)
     connect(&m_tcpConnect, &TCPConnect::dataReceived,
             this, &RequestHandler::onResponseReceived);
 
+    connect(m_updateTimer, &QTimer::timeout,
+            this, &RequestHandler::processNextHistoryRequest);
+
+}
+
+bool RequestHandler::Initialize()
+{
+    std::string stockRequest = StockTrack::Protocol::FormatClientRequest(MessageType::STOCK_LIST);
+    m_tcpConnect.sendRequest(QString::fromStdString(stockRequest));
+
+    return true;
 }
 
 TCPConnect* RequestHandler::getTCPConnect()
@@ -65,6 +76,18 @@ void RequestHandler::onResponseReceived(const QString& p_response)
             }
             case (MessageType::STOCK_LIST):
             {
+                //Iterate through names and store them into a container
+                for(auto& itr : message.m_stockNames)
+                {
+                    //All of these stocks will require "history" check, history request will fill the
+                    //prices between start time and date start (from 00.00 to when ever client started)
+                    m_historyRequestQueue.append(itr);
+                }
+                //In order to keep things going, wait for a bit before filling history.
+                if(m_updateTimer->isActive() == false)
+                {
+                    m_updateTimer->start(1000);
+                }
 
                 break;
             }
@@ -73,9 +96,18 @@ void RequestHandler::onResponseReceived(const QString& p_response)
 
                 break;
             }
-            case (MessageType::HSOTRY):
+            case (MessageType::HISTORY):
             {
+                if(message.m_stockNames.empty() == false)
+                {
+                    const std::string& stockName = message.m_stockNames[0];
+                    emit stockAdded(QString::fromStdString(stockName), message.m_acquisitionPrice);
 
+                    for(const auto& itr :message.m_prices)
+                    {
+                        emit priceUpdate(QString::fromStdString(stockName), itr.first, itr.second);
+                    }
+                }
                 break;
             }
             default:
@@ -83,10 +115,26 @@ void RequestHandler::onResponseReceived(const QString& p_response)
                 break;
             }
         }
+    }
+}
 
+void RequestHandler::processNextHistoryRequest()
+{
+    qDebug() << "Sending history request.";
+    if(m_historyRequestQueue.isEmpty() == false)
+    {
+        std::string stockName = m_historyRequestQueue.dequeue();
+        std::string historyRequest = StockTrack::Protocol::FormatClientRequest(
+            MessageType::HISTORY,
+            stockName);
+
+        m_tcpConnect.sendRequest(QString::fromStdString(historyRequest));
 
     }
-
+    else
+    {
+        m_updateTimer->stop();
+    }
 }
 
 

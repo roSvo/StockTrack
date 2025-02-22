@@ -28,6 +28,12 @@ int main(int argc, char *argv[])
     QObject::connect(&requestHandler, &RequestHandler::stockAdded,
                      &stockCollection, &StockCollection::addStock);
 
+    if(requestHandler.Initialize() == false)
+    {
+        //Some error handling at some point.
+        return 0;
+    }
+
     qmlRegisterType<RequestHandler>("StockTrackClient", 1, 0, "RequestHandler");
     qmlRegisterType<StockCollection>("StockTrackClient", 1, 0, "StockCollection");
 

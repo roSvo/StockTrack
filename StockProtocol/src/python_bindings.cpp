@@ -11,7 +11,7 @@ PYBIND11_MODULE(stockprotocol, m) {
         .value("ADD_STOCK", MessageType::ADD_STOCK)
         .value("STOCK_LIST", MessageType::STOCK_LIST)
         .value("CURRENT_PRICE", MessageType::CURRENT_PRICE)
-        .value("HISTORY", MessageType::HSOTRY)
+        .value("HISTORY", MessageType::HISTORY)
         .export_values();
 
     // Bind Message struct
@@ -35,6 +35,8 @@ PYBIND11_MODULE(stockprotocol, m) {
           static_cast<std::string (*)(MessageType, const std::string&, const std::string&, double)>(&StockTrack::Protocol::FormatClientRequest));
     m.def("format_server_response",
           static_cast<std::string (*)(MessageType)>(&StockTrack::Protocol::FormatServerResponse));
+    m.def("format_server_response",
+          static_cast<std::string (*)(MessageType, const std::vector<std::string>&)>(&StockTrack::Protocol::FormatServerResponse));
     m.def("format_server_response",
           static_cast<std::string (*)(MessageType, const std::string&, double, std::vector<std::pair<int, double>>)>(&StockTrack::Protocol::FormatServerResponse));
     m.def("parse_message", &StockTrack::Protocol::ParseMessage);

@@ -41,6 +41,27 @@ std::string StockTrack::Protocol::FormatServerResponse(MessageType p_messageType
     return AddField("TYPE", getMessageTypeAsString(p_messageType));
 }
 
+std::string StockTrack::Protocol::FormatServerResponse(MessageType p_messageType, const std::vector<std::string>& p_stocks)
+{
+    if(p_stocks.empty() == true)
+    {
+        return FormatServerResponse(MessageType::ERROR);
+    }
+
+    std::string names;
+    for(size_t i = 0; i < p_stocks.size(); ++i)
+    {
+        if(i > 0)
+        {
+            names += ",";
+        }
+        names += p_stocks[i];
+    }
+
+    return AddField("TYPE", getMessageTypeAsString(p_messageType)) +
+           AddField("NAME", names);
+}
+
 std::string StockTrack::Protocol::FormatServerResponse(MessageType p_messageType, const std::string& p_stockName, double p_acquisitionPrice, std::vector<std::pair<int, double>> p_prices)
 {
     std::string returnValue = AddField("TYPE", getMessageTypeAsString(p_messageType)) +
@@ -106,7 +127,7 @@ StockTrack::Message StockTrack::Protocol::ParseMessage(std::string& p_message)
             }
             else if(fieldValue == "HISTORY")
             {
-                returnValue.m_messageType = MessageType::HSOTRY;
+                returnValue.m_messageType = MessageType::HISTORY;
             }
             else
             {
@@ -212,7 +233,7 @@ std::string StockTrack::Protocol::getMessageTypeAsString(MessageType p_messageTy
         return "STOCK_LIST";
     case MessageType::CURRENT_PRICE:
         return "CURRENT_PRICE";
-    case MessageType::HSOTRY:
+    case MessageType::HISTORY:
         return "HISTORY";
     default:
         return "NO_REQUEST";

@@ -1,6 +1,6 @@
 import yfinance as YahooFinance
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import sqlite3
 import threading
 import socket
@@ -58,17 +58,16 @@ class StockTrackServerApplication():
     def FetchStockData(self):
         
         while True:
-
-            next_update = time.now() + 3600
-            print(f"[{datetime.now()}] Fetching stock data...")
+            current_time = datetime.now()
+            next_update = current_time + timedelta(hours=1)
+            print(f"[{current_time}] Fetching socket data..")
+            print(f"Next update scheduled for : {next_update.hour}:{next_update.minute}")
 
             self.GetStockData()
             print("Data fetched and stored succesfully.")
 
-            sleep_time = next_update - time.time()
-            #Wait for one hour before fetcing again
+            sleep_time = (next_update - datetime.now()).total_seconds()
             time.sleep(sleep_time)
-
 
     #Don't know if this is required yet. We just have to store the data.
     def GetStockData(self):
@@ -80,7 +79,7 @@ class StockTrackServerApplication():
                 #Insert little delay to avoid rate limits (should not be a problem)
                 time.sleep(2) 
 
-                print(f"Fetching dat afor {symbol}")
+                print(f"Fetching data for {symbol}")
                 stockData = YahooFinance.Ticker(symbol)
 
                 try:
@@ -235,7 +234,6 @@ class StockTrackServerApplication():
         pass
     def HandleRequestSTOCKLIST(self):
         """Retrieve all stock names and symbols in the database"""
-
         #Open database connection
         databaseConnection = self.GetDatabaseConnection()
         databaseCursor = databaseConnection.cursor()
@@ -250,61 +248,87 @@ class StockTrackServerApplication():
         databaseConnection.close()
 
         if results:
-            #Extract just the names from results
-            stockNames = []
-            for(name,) in results:
-                stockNames.append(name)
 
-            #Format response
-            return stockprotocol.FormatServerResponse(
+            #Query returns values as tulpes, so first name value would be ("<name1>,<>", "<name2>, <>") and so on. 
+            #Initialize empty container to hold only the name vaues without empty tuple pair            
+            all_stocks = []
+            #Iterate over results
+            for name in results:
+                #Append name
+                all_stocks.append(name[0])
+            
+            return stockprotocol.format_server_response(
                 stockprotocol.MessageType.STOCK_LIST,
-                *stockNames
+                all_stocks
             )
         else:
             return stockprotocol.format_error("No stock found in database")
 
-    def HandleRequestHISTORY(self, payload):
+    def HandleRequestHISTORY(self, message):
         """Retrieve price history for a specific stock for the last 24 hours"""
-        if not payload:
-            return "Error: Missing stock name"
-        
-        #Extract stock name from the request
-        stockName = payload.strip()
-        print(f"Fetching price history for: {stockName}")
+        if not message.stock_names or len(message.stock_names) == 0:
+            return stockprotocol.format_error("Missing stock name")
 
-        #Open database connection
+        #Get stock name from the mssage object
+        stockname = message.stock_names[0]
+        print(f"Fetchin price history for - {stockname}")
+
         databaseConnection = self.GetDatabaseConnection()
         databaseCursor = databaseConnection.cursor()
 
-        databaseCursor.execute("SELECT datetime('now'), date('now', 'start of day')")
-        current_time = databaseCursor.fetchone()
-        print(f"SQLite current time: {current_time[0]}")
-        print(f"SQLite start of day: {current_time[1]}")
-
+        #Get the latest date for this stock
         query = f"""
-            SELECT {PRICE_TABLE}.price, strftime('%H', {PRICE_TABLE}.time, 'localtime') as hour
+            SELECT date({PRICE_TABLE}.time) as latest_date
             FROM {PRICE_TABLE}
             JOIN {NAME_TABLE} ON {PRICE_TABLE}.stock_id = {NAME_TABLE}.id
             WHERE {NAME_TABLE}.name = ?
-            AND {PRICE_TABLE}.time >= date('now', 'localtime', 'start of day')
-            AND {PRICE_TABLE}.time <= datetime('now', 'localtime')
-            ORDER BY {PRICE_TABLE}.time ASC;
+            ORDER BY {PRICE_TABLE}.time DESC
+            LIMIT 1;
         """
 
-        databaseCursor.execute(query, (stockName,))
-        results = databaseCursor.fetchall()
+        databaseCursor.execute(query, (stockname,))
+        latest_date_result = databaseCursor.fetchone()
 
-        #Close the database connection
+        if latest_date_result :
+            lastest_date = latest_date_result[0]
+            print(f"Found latest date : {lastest_date} for {stockname}")
+
+            #Get all price for this date:
+            query = f"""
+                SELECT {PRICE_TABLE}.price, 
+                    strftime('%H', {PRICE_TABLE}.time) as hour
+                FROM {PRICE_TABLE}
+                JOIN {NAME_TABLE} ON {PRICE_TABLE}.stock_id = {NAME_TABLE}.id
+                WHERE {NAME_TABLE}.name = ?
+                AND date({PRICE_TABLE}.time) = ?
+                ORDER BY {PRICE_TABLE}.time ASC;
+            """
+
+        databaseCursor.execute(query, (stockname, lastest_date))
+        results = databaseCursor.fetchall()
         databaseConnection.close()
 
         if results:
-            #Format response "STOCKNAME hour1=price1,hour2=price2 ..."
-            price_data = [f"{hour}={price}" for price, hour in results]
-            response = f"{stockName}:{','.join(price_data)}"
-            print(f"Sending history response: {response}")
-            return response
-        else:
-            return f"Error: No price history found for {stockName}"
+            prices = []
+            for values in results:
+                #Get first column: price
+                price = float(values[0])
+                #Get second column: hour
+                hour = int(values[1])
+
+                #Create tuple and append prices
+                price_entry = (hour, price)
+                prices.append(price_entry)
+
+            return stockprotocol.format_server_response(
+                stockprotocol.MessageType.HISTORY,
+                stockname,
+                0.0,
+                prices
+            )
+
+        return stockprotocol.format_error(f"No pirce history foudn for {stockname}")
+
 
 ####################################################################################################
 ########                           LISTEN CLIENTS                                           ########
@@ -318,7 +342,7 @@ class StockTrackServerApplication():
         if message.message_type == stockprotocol.MessageType.ADD_STOCK:
             return self.HandleRequestADD(message)
         elif message.message_type == stockprotocol.MessageType.STOCK_LIST:
-            return self.HandleRequestSTOCKLIST(message)
+            return self.HandleRequestSTOCKLIST()
         elif message.message_type == stockprotocol.MessageType.CURRENT_PRICE:
             return self.HandleRequestCURRENT(message)
         elif message.message_type == stockprotocol.MessageType.HISTORY:
