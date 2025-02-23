@@ -25,8 +25,11 @@ int main(int argc, char *argv[])
     RequestHandler requestHandler;
     StockCollection stockCollection;
 
-    QObject::connect(&requestHandler, &RequestHandler::stockAdded,
-                     &stockCollection, &StockCollection::addStock);
+    QObject::connect(&requestHandler, &RequestHandler::stockAddedSIGNAL,
+                     &stockCollection, &StockCollection::addStockSLOT);
+
+    QObject::connect(&requestHandler, &RequestHandler::updatePriceSIGNAL,
+                     &stockCollection, &StockCollection::updatePriceSLOT);
 
     if(requestHandler.Initialize() == false)
     {
@@ -36,6 +39,7 @@ int main(int argc, char *argv[])
 
     qmlRegisterType<RequestHandler>("StockTrackClient", 1, 0, "RequestHandler");
     qmlRegisterType<StockCollection>("StockTrackClient", 1, 0, "StockCollection");
+    qRegisterMetaType<PriceRange>("PriceRange");
 
     engine.rootContext()->setContextProperty("requestHandler", &requestHandler);
     engine.rootContext()->setContextProperty("stockCollection", &stockCollection);

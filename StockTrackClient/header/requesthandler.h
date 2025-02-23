@@ -31,8 +31,8 @@ public:
     Q_INVOKABLE void addStock(const QString& name, const QString& symbol, double acquisationPrice);
 
 signals:
-    void stockAdded(const QString& name, double acquisitionPrice);
-    void priceUpdate(const QString& name, int hour, double price);
+    void stockAddedSIGNAL(const QString& name, double acquisitionPrice);
+    void updatePriceSIGNAL(const QString& name, int hour, double price);
 
 private slots:
 

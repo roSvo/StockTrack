@@ -44,11 +44,37 @@ QList<double> StockCollection::getPrices(const QString& name) const
 
 PriceRange StockCollection::getPriceRange(const QString& name) const
 {
-    PriceRange priceRange;
-    return priceRange;
+
+    for(const auto& itr : m_stocks)
+    {
+        if(itr.m_name == name)
+        {
+            if(itr.m_prices.isEmpty() == true)
+            {
+                qDebug() << "Return empty prices..";
+                return PriceRange();
+            }
+
+            double sum = 0.0;
+            for(const auto& price : itr.m_prices)
+            {
+                sum += price;
+            }
+            double average = sum / itr.m_prices.size();
+
+            //Compute ragne as ±25% of average
+            double min = average * 0.75;
+            min = min < 0 ? 0 : min;
+            double max = average * 1.25;
+
+            qDebug() << "Returning filled prices..";
+            return PriceRange(min, max, average);
+        }
+    }
+    return PriceRange();
 }
 
-void StockCollection::addStock(const QString& name, double acqisitionPrice)
+void StockCollection::addStockSLOT(const QString& name, double acqisitionPrice)
 {
     if(hasStock(name) == false)
     {
@@ -58,9 +84,18 @@ void StockCollection::addStock(const QString& name, double acqisitionPrice)
     }
 }
 
-void StockCollection::updatePrice(const QString& name, int hour, double price)
+void StockCollection::updatePriceSLOT(const QString& name, int hour, double price)
 {
-
+    for(auto& itr : m_stocks)
+    {
+        if(itr.m_name == name)
+        {
+            itr.m_prices[hour] = price;
+            qDebug() << "Updated price for" << name << "at hour" << hour << "to" << price;
+            emit priceUpdated(name);
+            return;
+        }
+    }
 }
 
 bool StockCollection::hasStock(const QString& name) const

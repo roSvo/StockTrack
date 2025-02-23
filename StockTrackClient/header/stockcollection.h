@@ -15,6 +15,14 @@
 //to match its price.
 struct PriceRange
 {
+private:
+    Q_GADGET
+public:
+    Q_PROPERTY(double min READ getMin CONSTANT)
+    Q_PROPERTY(double max READ getMax CONSTANT)
+    Q_PROPERTY(double avg READ getAvg CONSTANT)
+
+public:
     PriceRange(double p_min = 0.0, double p_max = 10.0, double p_average = 5.0)
         : min(p_min)
         , max(p_max)
@@ -22,6 +30,12 @@ struct PriceRange
     {
 
     }
+
+    double getMin() const { return min; }
+    double getMax() const { return max; }
+    double getAvg() const { return average; }
+
+private:
     double min;
     double max;
     double average;
@@ -43,12 +57,12 @@ public:
     Q_INVOKABLE PriceRange getPriceRange(const QString& name) const;
 
 public slots:
-    void addStock(const QString& name, double acqisitionPrice);
-    void updatePrice(const QString& name, int hour, double price);
+    void addStockSLOT(const QString& name, double acqisitionPrice);
+    void updatePriceSLOT(const QString& name, int hour, double price);
 
 signals:
     void stocksChanged();
-    void priceUpdated();
+    void priceUpdated(QString stockName);
 
 private:
     QList<Stock> m_stocks;

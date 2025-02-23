@@ -19,10 +19,14 @@ Item
         if(chartData && chartData.length > 0)
         {
             let range = stockCollection.getPriceRange(stockName);
-            console.log("Range for ", stockName, " - min:", range.min, " max: ", range.max)
 
-            yAxis.min = range.min;
-            yAxis.max = range.max;
+            console.log("Range for", stockName,
+                        " -min: ", range.min,
+                        " -max: ", range.max,
+                        " -avg: ", range.avg)
+
+            yAxis.min = range.min
+            yAxis.max = range.max
 
             //Plot non zero values
             for(let hour = 0; hour < chartData.length; hour++)
@@ -33,7 +37,19 @@ Item
                 }
             }
         }
-   }
+    }
+
+    Connections
+    {
+        target: stockCollection
+        function onPriceUpdated(updatedStock: string)
+        {
+            if(updatedStock === stockName)
+            {
+                chartData = stockCollection.getPrices(stockName)
+            }
+        }
+    }
 
     ChartView
     {

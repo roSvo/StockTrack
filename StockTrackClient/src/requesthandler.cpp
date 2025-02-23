@@ -41,17 +41,13 @@ TCPConnect* RequestHandler::getTCPConnect()
 //SENT REQUESTS
 void RequestHandler::addStock(const QString& name, const QString& symbol, double acquisitionPrice)
 {
-    //Format request using protocol
-    qDebug() << "Name : " << name;
-
+    //Format request with protocol library
     std::string addStockRequest = StockTrack::Protocol::FormatClientRequest(
         MessageType::ADD_STOCK,
         name.toStdString(),
         symbol.toStdString(),
         acquisitionPrice
         );
-
-    qDebug() << "Protocol string : " << addStockRequest;
 
     //Send to server
     m_tcpConnect.sendRequest(QString::fromStdString(addStockRequest));
@@ -101,11 +97,11 @@ void RequestHandler::onResponseReceived(const QString& p_response)
                 if(message.m_stockNames.empty() == false)
                 {
                     const std::string& stockName = message.m_stockNames[0];
-                    emit stockAdded(QString::fromStdString(stockName), message.m_acquisitionPrice);
+                    emit stockAddedSIGNAL(QString::fromStdString(stockName), message.m_acquisitionPrice);
 
-                    for(const auto& itr :message.m_prices)
+                    for(const auto& itr : message.m_prices)
                     {
-                        emit priceUpdate(QString::fromStdString(stockName), itr.first, itr.second);
+                        emit updatePriceSIGNAL(QString::fromStdString(stockName), itr.first, itr.second);
                     }
                 }
                 break;

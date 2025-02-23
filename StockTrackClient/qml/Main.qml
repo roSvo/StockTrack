@@ -34,7 +34,7 @@ ApplicationWindow
                 {
                     width: parent.width
                     stockName: modelData
-                    chartData: stockCollection.getPrices[modelData] || []
+                    chartData: stockCollection.getPrices(modelData) || []
 
                     Component.onCompleted:
                     {
