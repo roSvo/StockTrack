@@ -10,44 +10,49 @@ Item
 
     // Pass data to this property from Main.qml
     property string stockName: ""
+    property double acquisitionPrice: 0.0
+    property bool isInitialized: false
     property var chartData: []
-
-    onChartDataChanged:
-    {
-        series.clear()
-
-        if(chartData && chartData.length > 0)
-        {
-            let range = stockCollection.getPriceRange(stockName);
-
-            console.log("Range for", stockName,
-                        " -min: ", range.min,
-                        " -max: ", range.max,
-                        " -avg: ", range.avg)
-
-            yAxis.min = range.min
-            yAxis.max = range.max
-
-            //Plot non zero values
-            for(let hour = 0; hour < chartData.length; hour++)
-            {
-                if(chartData[hour] > 0)
-                {
-                    series.append(hour, chartData[hour])
-                }
-            }
-        }
-    }
 
     Connections
     {
         target: stockCollection
-        function onPriceUpdated(updatedStock: string)
+        function onStockInitialized(name: string, acqPrice: double): void
         {
-            if(updatedStock === stockName)
+            if(name === stockName && !isInitialized)
             {
-                chartData = stockCollection.getPrices(stockName)
+                //Initial setup
+                yAxis.titleText = stockName
+                acquisitionPrice = acqPrice
+
+                let range = stockCollection.getPriceRange(stockName)
+                yAxis.min = range.min
+                yAxis.max = range.max
+
+                isInitialized = true
             }
+        }
+
+        function onMultiplePricesUpdated(name: string, prices: Array): void
+        {
+            if(name === stockName && isInitialized)
+            {
+                series.clear()
+                for(let i = 0; i < prices.length; i++)
+                {
+                    let point = prices[i]
+                    series.append(point.hour, point.price)
+                }
+
+                let range = stockCollection.getPriceRange(stockName)
+                yAxis.min = range.min ?? 0
+                yAxis.max = range.max ?? 10
+            }
+        }
+
+        function onSinglePriceUpdated(name: string, hour: number, price: number): void
+        {
+
         }
     }
 

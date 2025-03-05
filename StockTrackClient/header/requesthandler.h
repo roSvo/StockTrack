@@ -27,12 +27,16 @@ public:
     TCPConnect* getTCPConnect();
     StockCollection* getStockData();
 
+public slots:
+    void addStock(const QString& p_name, const QString& p_symbol, double p_acquisitionPrice);
 
-    Q_INVOKABLE void addStock(const QString& name, const QString& symbol, double acquisationPrice);
+    void onChartsInitializedSLOT();
 
 signals:
-    void stockAddedSIGNAL(const QString& name, double acquisitionPrice);
-    void updatePriceSIGNAL(const QString& name, int hour, double price);
+    void stockAddedSIGNAL(const QString& p_name, double p_acquisitionPrice);
+    void updateMultiplePricesSIGNAL(const QString& p_name, std::vector<std::pair<int, double>> p_prices);
+    void updateSinglePriceSIGNAL(const QString& p_name, int p_hour, double p_price);
+    void initializeChartSIGNAL(QStringList p_stockNames);
 
 private slots:
 

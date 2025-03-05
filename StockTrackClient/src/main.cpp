@@ -28,8 +28,11 @@ int main(int argc, char *argv[])
     QObject::connect(&requestHandler, &RequestHandler::stockAddedSIGNAL,
                      &stockCollection, &StockCollection::addStockSLOT);
 
-    QObject::connect(&requestHandler, &RequestHandler::updatePriceSIGNAL,
-                     &stockCollection, &StockCollection::updatePriceSLOT);
+    QObject::connect(&requestHandler, &RequestHandler::updateSinglePriceSIGNAL,
+                     &stockCollection, &StockCollection::updateSinglePriceSLOT);
+
+    QObject::connect(&requestHandler, &RequestHandler::updateMultiplePricesSIGNAL,
+                     &stockCollection, &StockCollection::updateMultiplePricesSLOT);
 
     if(requestHandler.Initialize() == false)
     {

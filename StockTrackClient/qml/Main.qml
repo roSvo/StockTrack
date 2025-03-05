@@ -28,18 +28,13 @@ ApplicationWindow
 
             Repeater
             {
-                model: stockCollection.stockNames.slice(currentPage * chartsPerPage, (currentPage + 1) * chartsPerPage);                //model: stockData.stockNames.slice(currentPage * chartsPerPage, (currentPage + 1) * chartsPerPage)
-
-                delegate: PlotChart
-                {
+                //Model will be updated when receive stock names
+                id: plotAreaRepeater
+                //Start empty, will be filled bu initializeChartSIGNAL from C++ code.
+                model: []
+                delegate: PlotChart {
                     width: parent.width
                     stockName: modelData
-                    chartData: stockCollection.getPrices(modelData) || []
-
-                    Component.onCompleted:
-                    {
-                        console.log("Stock name : ", modelData)
-                    }
                 }
             }
         }
@@ -72,7 +67,7 @@ ApplicationWindow
                 text: "Fetch List"
                 onClicked:
                 {
-                    console.log("Button clicked")
+
                 }
             }
             Button
@@ -140,6 +135,26 @@ ApplicationWindow
         }
     }
 
+    //Function to update visible charts based on current page.
+    function updateVisibleCharts()
+    {
+        let start = currentPage * chartsPerPage
+        let end = Math.min(start + chartsPerPage, plotAreaRepeater.model.length)
+        plotAreaRepeater.model = plotAreaRepeater.model.slice(start, end)
+    }
+
+    Connections
+    {
+        target: requestHandler
+        function onInitializeChartSIGNAL(stockNames)
+        {
+            currentPage = 0
+            plotAreaRepeater.model = stockNames
+
+            //Send signal that, charts have been initialized.
+            requestHandler.onChartsInitializedSLOT();
+        }
+    }
     Component.onCompleted:
     {
         // Position window on the second monitor
@@ -156,7 +171,6 @@ ApplicationWindow
             stockTrackWindow.y = 0;
         }
 
-        console.log(("Request stock list FROM QML."))
         //TCPConnect.requestStockList()
 
     }

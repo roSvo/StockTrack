@@ -39,20 +39,27 @@ TCPConnect* RequestHandler::getTCPConnect()
 
 
 //SENT REQUESTS
-void RequestHandler::addStock(const QString& name, const QString& symbol, double acquisitionPrice)
+void RequestHandler::addStock(const QString& p_name, const QString& p_symbol, double p_acquisitionPrice)
 {
     //Format request with protocol library
     std::string addStockRequest = StockTrack::Protocol::FormatClientRequest(
         MessageType::ADD_STOCK,
-        name.toStdString(),
-        symbol.toStdString(),
-        acquisitionPrice
+        p_name.toStdString(),
+        p_symbol.toStdString(),
+        p_acquisitionPrice
         );
 
     //Send to server
     m_tcpConnect.sendRequest(QString::fromStdString(addStockRequest));
 }
 
+void RequestHandler::onChartsInitializedSLOT()
+{
+    if(m_historyRequestQueue.empty() == false)
+    {
+        processNextHistoryRequest();
+    }
+}
 
 //RECEIVED REQUESTS
 void RequestHandler::onResponseReceived(const QString& p_response)
@@ -72,19 +79,20 @@ void RequestHandler::onResponseReceived(const QString& p_response)
             }
             case (MessageType::STOCK_LIST):
             {
+                QStringList stockNames;
                 //Iterate through names and store them into a container
                 for(auto& itr : message.m_stockNames)
                 {
                     //All of these stocks will require "history" check, history request will fill the
                     //prices between start time and date start (from 00.00 to when ever client started)
+                    qDebug() << "Adding " << itr << " to history queue";
                     m_historyRequestQueue.append(itr);
-                }
-                //In order to keep things going, wait for a bit before filling history.
-                if(m_updateTimer->isActive() == false)
-                {
-                    m_updateTimer->start(1000);
+                    //For QML, it works best with Qt provided objects.
+                    stockNames.append(QString::fromStdString(itr));
                 }
 
+                //Send message to QML, this will initialize stock names count amount of empty charts
+                emit initializeChartSIGNAL(stockNames);
                 break;
             }
             case (MessageType::CURRENT_PRICE):
@@ -94,15 +102,31 @@ void RequestHandler::onResponseReceived(const QString& p_response)
             }
             case (MessageType::HISTORY):
             {
+
                 if(message.m_stockNames.empty() == false)
                 {
+                    //Ensure we really have this name in history queue
+                    auto itr = std::find(m_historyRequestQueue.begin(), m_historyRequestQueue.end(),
+                                         message.m_stockNames[0]);
+                    //Check that we have a valid value.
+                    if(itr == m_historyRequestQueue.end())
+                    {
+                        //If not, we have not received correct data, wait for another connection attempt.
+                        break;
+                    }
+                    //Erase this from request queue.
+                    m_historyRequestQueue.erase(itr);
+
+                    //Get the first name fro mthe stock name list.
                     const std::string& stockName = message.m_stockNames[0];
+
+                    //Add stock for Client.
                     emit stockAddedSIGNAL(QString::fromStdString(stockName), message.m_acquisitionPrice);
 
-                    for(const auto& itr : message.m_prices)
-                    {
-                        emit updatePriceSIGNAL(QString::fromStdString(stockName), itr.first, itr.second);
-                    }
+                    //Iterate over all prices.
+                    emit updateMultiplePricesSIGNAL(QString::fromStdString(stockName), message.m_prices);
+
+                    processNextHistoryRequest();
                 }
                 break;
             }
@@ -116,20 +140,19 @@ void RequestHandler::onResponseReceived(const QString& p_response)
 
 void RequestHandler::processNextHistoryRequest()
 {
-    qDebug() << "Sending history request.";
+
+    qDebug() << "Sending history request : " << m_historyRequestQueue;
     if(m_historyRequestQueue.isEmpty() == false)
     {
-        std::string stockName = m_historyRequestQueue.dequeue();
-        std::string historyRequest = StockTrack::Protocol::FormatClientRequest(
-            MessageType::HISTORY,
-            stockName);
+        QTimer::singleShot(1000, this, [this]()
+        {
+            std::string stockName = m_historyRequestQueue.head();
+            std::string historyRequest = StockTrack::Protocol::FormatClientRequest(
+                MessageType::HISTORY,
+                stockName);
 
-        m_tcpConnect.sendRequest(QString::fromStdString(historyRequest));
-
-    }
-    else
-    {
-        m_updateTimer->stop();
+            m_tcpConnect.sendRequest(QString::fromStdString(historyRequest));
+        });
     }
 }
 

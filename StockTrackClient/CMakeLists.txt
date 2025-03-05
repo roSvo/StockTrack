@@ -32,7 +32,7 @@ qt_add_executable(ApplicationStockTrackClient
     header/requesthandler.h
     src/tcpconnect.cpp
     src/stockcollection.cpp
-    src/stock.cpp
+
     src/requesthandler.cpp
     src/main.cpp
 )
