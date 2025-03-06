@@ -62,6 +62,16 @@ std::string StockTrack::Protocol::FormatServerResponse(MessageType p_messageType
            AddField("NAME", names);
 }
 
+std::string StockTrack::Protocol::FormatServerResponse(MessageType p_messageType, const std::string& p_stockName, std::pair<int, double> p_price)
+{
+    std::string returnValue = AddField("TYPE", getMessageTypeAsString(p_messageType)) +
+                              AddField("NAME", p_stockName);
+
+    std::string priceStr = std::to_string(p_price.first) + ":" + std::to_string(p_price.second);
+
+    return returnValue + AddField("PRICES", priceStr);
+}
+
 std::string StockTrack::Protocol::FormatServerResponse(MessageType p_messageType, const std::string& p_stockName, double p_acquisitionPrice, std::vector<std::pair<int, double>> p_prices)
 {
     std::string returnValue = AddField("TYPE", getMessageTypeAsString(p_messageType)) +

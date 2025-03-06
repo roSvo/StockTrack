@@ -21,22 +21,14 @@ RequestHandler::RequestHandler(QObject* parent)
 
     connect(m_updateTimer, &QTimer::timeout,
             this, &RequestHandler::processNextHistoryRequest);
-
 }
 
 bool RequestHandler::Initialize()
 {
     std::string stockRequest = StockTrack::Protocol::FormatClientRequest(MessageType::STOCK_LIST);
     m_tcpConnect.sendRequest(QString::fromStdString(stockRequest));
-
     return true;
 }
-
-TCPConnect* RequestHandler::getTCPConnect()
-{
-    return &m_tcpConnect;
-}
-
 
 //SENT REQUESTS
 void RequestHandler::addStock(const QString& p_name, const QString& p_symbol, double p_acquisitionPrice)
@@ -59,6 +51,11 @@ void RequestHandler::onChartsInitializedSLOT()
     {
         processNextHistoryRequest();
     }
+}
+
+void RequestHandler::stockNamesResponseSLOT(QStringList p_names)
+{
+
 }
 
 //RECEIVED REQUESTS

@@ -25,35 +25,9 @@ QStringList StockCollection::getStockNames() const
     return names;
 }
 
-QList<double> StockCollection::getPrices(const QString& p_name) const
-{
-    /*
-    QList<double> prices;
-
-
-
-    if(stock.m_name == name)
-    {
-        qDebug() << "Getting prices for" << name << "with" << stock.m_prices.size() << "entries";
-        for(unsigned int hour = 0; hour < 24; ++hour)
-        {
-            double price = stock.m_prices.value(hour, 0.0);
-            prices.append(price);
-            if(price > 0)
-            {
-                qDebug() << "Hour:" << hour << "Price:" << price;
-            }
-            break;
-        }
-    }
-    return prices;
-    */
-    return QList<double>();
-}
 
 PriceRange StockCollection::getPriceRange(const QString& name) const
 {
-
     for(const auto& itr : m_stocks)
     {
         if(itr.m_name == name)
@@ -112,6 +86,12 @@ void StockCollection::updateSinglePriceSLOT(const QString& p_name, int p_hour, d
     emit singlePriceUpdated(p_name, p_hour, p_price);
     return;
 }
+
+void StockCollection::stockNamesRequestedSLOT()
+{
+    emit stockNamesResponseSIGNAL(getStockNames());
+}
+
 
 void StockCollection::populateStocks(const QString& p_name, int p_hour, double p_prices)
 {

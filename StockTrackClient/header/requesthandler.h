@@ -14,7 +14,6 @@
 
 //INCLUDE PROJECT
 #include "header/tcpconnect.h"
-#include "header/stockcollection.h"
 
 class RequestHandler : public QObject
 {
@@ -24,23 +23,30 @@ public:
     RequestHandler(QObject* parent = nullptr);
     bool Initialize();
 
-    TCPConnect* getTCPConnect();
-    StockCollection* getStockData();
-
+//Use SIGNAL and SLOT postfix between C++ communication. Postfixless are saved for QML communication
 public slots:
     void addStock(const QString& p_name, const QString& p_symbol, double p_acquisitionPrice);
-
     void onChartsInitializedSLOT();
+    void stockNamesResponseSLOT(QStringList p_stockNames);
 
 signals:
+    //Inform stock collection that server has sent stock which should be added to stock collection.
+    //This is intended for client to sync it's state with servr
     void stockAddedSIGNAL(const QString& p_name, double p_acquisitionPrice);
+    //Update HISOTYR request prices, a situation where server send all daily data of single stock to client as single messge
     void updateMultiplePricesSIGNAL(const QString& p_name, std::vector<std::pair<int, double>> p_prices);
+    //Update CURREN_PRICE where only one stock price is sent to client to be updated.
     void updateSinglePriceSIGNAL(const QString& p_name, int p_hour, double p_price);
+    //Client is up and running, time to create QML chrats with stock names.
     void initializeChartSIGNAL(QStringList p_stockNames);
+    //Request names from StockCollection (internal call)
+    void requestStockNamesSIGNAL();
 
 private slots:
 
+    //Received TCP communication messages are hanlded here.
     void onResponseReceived(const QString& p_response);
+
 
 private:
 
@@ -58,8 +64,6 @@ private:
     QTimer* m_updateTimer;
     //Timer reserved for hourly update calls.
     QTimer* m_requestTimer;
-
-
 
 };
 

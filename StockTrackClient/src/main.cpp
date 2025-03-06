@@ -34,6 +34,12 @@ int main(int argc, char *argv[])
     QObject::connect(&requestHandler, &RequestHandler::updateMultiplePricesSIGNAL,
                      &stockCollection, &StockCollection::updateMultiplePricesSLOT);
 
+    QObject::connect(&requestHandler, &RequestHandler::requestStockNamesSIGNAL,
+                     &stockCollection, &StockCollection::stockNamesRequestedSLOT);
+
+    QObject::connect(&stockCollection, &StockCollection::stockNamesResponseSIGNAL,
+                     &requestHandler, &RequestHandler::stockNamesResponseSLOT);
+
     if(requestHandler.Initialize() == false)
     {
         //Some error handling at some point.

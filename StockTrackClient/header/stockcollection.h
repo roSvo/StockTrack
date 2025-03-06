@@ -53,19 +53,22 @@ public:
 
     //Methods for QML
     QStringList getStockNames() const;
-    Q_INVOKABLE QList<double> getPrices(const QString& p_name) const;
     Q_INVOKABLE PriceRange getPriceRange(const QString& p_name) const;
 
+//Use SIGNAL and SLOT postfix between C++ communication. Postfixless are saved for QML communication
 public slots:
     void addStockSLOT(const QString& p_name, double p_acqisitionPrice);
     void updateMultiplePricesSLOT(const QString& p_name, std::vector<std::pair<int, double>> p_prices);
     void updateSinglePriceSLOT(const QString& p_name, int p_hour, double p_price);
+    void stockNamesRequestedSLOT();
 
 signals:
     void pageChanged(int p_startIndex, int p_endIndex);
     void stockInitialized(QString p_name, double p_acquisitionPrice);
     void multiplePricesUpdated(QString p_name, QList<QVariantMap> p_prices);
     void singlePriceUpdated(QString p_name, int p_hour, double p_price);
+
+    void stockNamesResponseSIGNAL(QStringList p_stockNames);
 
 private:
 

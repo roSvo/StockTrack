@@ -79,7 +79,9 @@ public:
     static std::string FormatServerResponse(MessageType p_messageType);
     //Example: STOCK_LIST: "Apple" "Amazon" "Google" sends back all stocks which are listed in database.
     static std::string FormatServerResponse(MessageType p_messageType, const std::vector<std::string>& p_stocks);
-    //Example: PRICE_HISTORY / CURRENT_PRICE "Apple":"1100""150.50","1200""151.00"
+    //Example CURRENT PRICE / "Apple":12.00""151"
+    static std::string FormatServerResponse(MessageType p_messageType, const std::string& p_stockName, std::pair<int, double> p_price);
+    //Example: PRICE_HISTORY / "Apple":"155:"1100""150.50","1200""151.00"
     static std::string FormatServerResponse(MessageType p_messageType, const std::string& p_stockName, double p_acquisitionPrice, std::vector<std::pair<int, double>> p_prices);
 
     static std::string FormatError(std::string& p_errorMessage);
