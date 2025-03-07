@@ -77,8 +77,10 @@ Item
             id: xAxis
             min: 0
             max: 23
+            tickCount: 12
             titleText: ""
             labelFormat: "%d"
+            gridVisible: true
         }
 
         ValuesAxis

@@ -47,14 +47,16 @@ private slots:
     //Received TCP communication messages are hanlded here.
     void onResponseReceived(const QString& p_response);
 
-
 private:
 
     //Process history queue one by one.
     void processNextHistoryRequest();
+    void requestCurrentPrice();
 
     //TCP/IP Connection socket
     TCPConnect m_tcpConnect;
+
+    bool m_initialSetupComplete;
 
     //Stock list responses with all available stocks in database, these should be handled one by one,
     //since each of them requires stock history (stock prices between start and start of the day)

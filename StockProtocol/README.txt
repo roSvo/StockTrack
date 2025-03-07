@@ -20,8 +20,11 @@ StockTrack
 --qml
 --src
 
-Inside Desktop_Qt_6_7_2_MinGW_64_bit-Debug folder, where the cmake_install.cmake file is located call:
-"C:/Qt/Tools/CMake_64/bin/cmake.exe" ..
+
+Open with Qt to build. From File menu -> Build -> Rebuild
+-> this will create build directory and within it you should find Release (or debug, but there is no reson to build anyting but release from this)
+
+Next: 
 
 If you don't have CMake in path variable use Qt's standard cmake installation (by default located at :
 "C:/Qt/Tools/CMake_64/bin/cmake.exe" --install .

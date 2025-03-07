@@ -12,6 +12,7 @@
 RequestHandler::RequestHandler(QObject* parent)
     : QObject(parent)
     , m_tcpConnect(this)
+    , m_initialSetupComplete(false)
 {
     m_updateTimer = new QTimer(this);
     m_requestTimer = new QTimer(this);
@@ -21,6 +22,9 @@ RequestHandler::RequestHandler(QObject* parent)
 
     connect(m_updateTimer, &QTimer::timeout,
             this, &RequestHandler::processNextHistoryRequest);
+
+    connect(m_requestTimer, &QTimer::timeout,
+            this, &RequestHandler::requestCurrentPrice);
 }
 
 bool RequestHandler::Initialize()
@@ -151,6 +155,17 @@ void RequestHandler::processNextHistoryRequest()
             m_tcpConnect.sendRequest(QString::fromStdString(historyRequest));
         });
     }
+    else
+    {
+        m_initialSetupComplete = true;
+        m_requestTimer->start(3600000);
+    }
+}
+
+void RequestHandler::requestCurrentPrice()
+{
+    emit requestStockNamesSIGNAL();
+    m_requestTimer->start(3600000);
 }
 
 

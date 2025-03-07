@@ -78,13 +78,10 @@ public:
     //Example: INVALID -> this is not an actual request.
     static std::string FormatServerResponse(MessageType p_messageType);
     //Example: STOCK_LIST: "Apple" "Amazon" "Google" sends back all stocks which are listed in database.
-    template <typename ... T>
-    static std::string FormatServerResponse(MessageType p_messageType, const std::string& p_stockName, T ... p_remainingNames)
-    {
-        return AddField("TYPE", getMessageTypeAsString(p_messageType)) +
-               AddField("NAME", AddMultipleNames(p_stockName, p_remainingNames...));
-    }
-    //Example: PRICE_HISTORY / CURRENT_PRICE "Apple":"1100""150.50","1200""151.00"
+    static std::string FormatServerResponse(MessageType p_messageType, const std::vector<std::string>& p_stocks);
+    //Example CURRENT PRICE / "Apple":12.00""151"
+    static std::string FormatServerResponse(MessageType p_messageType, const std::string& p_stockName, std::pair<int, double> p_price);
+    //Example: PRICE_HISTORY / "Apple":"155:"1100""150.50","1200""151.00"
     static std::string FormatServerResponse(MessageType p_messageType, const std::string& p_stockName, double p_acquisitionPrice, std::vector<std::pair<int, double>> p_prices);
 
     static std::string FormatError(std::string& p_errorMessage);
@@ -96,18 +93,6 @@ private:
 
     //Function to add new field into Response / Request, so it's in standard fashion wihout bigger typos
     static std::string AddField(std::string p_field, std::string p_value);
-
-    //Template function to help parameter pack template function to fill in the rest of the names (p_remainingNames)
-    template <typename ... T>
-    static std::string AddMultipleNames(std::string& p_name, T ... p_remainingNames)
-    {
-        //Wihtout if constexpr we would need to define function for single addition AddSingleName(p_name){return p_name} and call it.
-        if constexpr (sizeof ... (p_remainingNames) == 0)
-        {
-            return p_name;
-        }
-        return p_name + "," + AddMultipleNames(p_remainingNames...);
-    }
 
     //Mapper function which gives the string name for MessageTypes
     static std::string getMessageTypeAsString(MessageType p_messageType);

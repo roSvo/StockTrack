@@ -45,10 +45,10 @@ PriceRange StockCollection::getPriceRange(const QString& name) const
             }
             double average = sum / itr.m_prices.size();
 
-            //Compute ragne as ±25% of average
-            double min = average * 0.75;
+            //Compute ragne as ±5% of average
+            double min = average * 0.95;
             min = min < 0 ? 0 : min;
-            double max = average * 1.25;
+            double max = average * 1.05;
 
             return PriceRange(min, max, average);
         }
