@@ -8,6 +8,8 @@ Item
     width: 500
     height: 150
 
+    signal deleteStock(string stockName)
+
     // Pass data to this property from Main.qml
     property string stockName: ""
     property double acquisitionPrice: 0.0
@@ -68,6 +70,7 @@ Item
         margins.top: 1
         margins.bottom: 1
         backgroundColor: "transparent"
+        opacity: 0.5
 
         //Remove title to save space
         title: ""
@@ -104,5 +107,37 @@ Item
 
         //Disalbe the legend (hides the "line series" -title
         legend.visible: false
+    }
+
+    Rectangle
+    {
+        id: closeButton
+        width: 15
+        height: 15
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: 5
+        color: closeButtonMouseArea.containsMouse ? "#ff4444" : "#ff6666"
+
+        Text
+        {
+            anchors.centerIn: parent
+            text: "X"
+            color: "white"
+            font.pixelSize: 16
+            font.bold: true
+        }
+
+        MouseArea
+        {
+            id: closeButtonMouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked:
+            {
+                deleteStock(stockName)
+            }
+        }
+
     }
 }

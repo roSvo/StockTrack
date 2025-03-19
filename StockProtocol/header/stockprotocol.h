@@ -27,7 +27,8 @@ enum class MessageType
     ADD_STOCK = 1,
     STOCK_LIST,
     CURRENT_PRICE,
-    HISTORY
+    HISTORY,
+    REMOVE_STOCK
 };
 
 namespace StockTrack

@@ -80,10 +80,10 @@ void StockCollection::updateMultiplePricesSLOT(const QString& p_name, std::vecto
     emit multiplePricesUpdated(p_name, qtPrices);
 }
 
-void StockCollection::updateSinglePriceSLOT(const QString& p_name, int p_hour, double p_price)
+void StockCollection::updateSinglePriceSLOT(const QString& p_name, std::pair<int, double> p_price)
 {
-    populateStocks(p_name, p_hour, p_price);
-    emit singlePriceUpdated(p_name, p_hour, p_price);
+    populateStocks(p_name, p_price.first, p_price.second);
+    emit singlePriceUpdated(p_name, p_price.first, p_price.second);
     return;
 }
 
@@ -92,6 +92,19 @@ void StockCollection::stockNamesRequestedSLOT()
     emit stockNamesResponseSIGNAL(getStockNames());
 }
 
+void StockCollection::onStockDeletedSLOT(const QString& p_name)
+{
+    for(int i = 0; i < m_stocks.size(); ++i)
+    {
+        if(m_stocks[i].m_name == p_name)
+        {
+            m_stocks.removeAt(i);
+            emit stockRemovedSIGNAL(p_name);
+            emit pageChanged(0, m_stocks.size());
+            break;
+        }
+    }
+}
 
 void StockCollection::populateStocks(const QString& p_name, int p_hour, double p_prices)
 {

@@ -12,7 +12,6 @@ DATABASE_NAME = "StockTrack.db"
 NAME_TABLE = "Stock"
 PRICE_TABLE = "Price"
 
-#HOST_IP = "192.162.68.105"
 HOST_IP = "0.0.0.0"
 PORT = 20580
 
@@ -148,35 +147,60 @@ class StockTrackServerApplication():
 ####################################################################################################
 
 
-    def HandleRequestCURRENT(self, payload):
+    def HandleRequestCURRENT(self, message):
         """Retrieve the lastest price for the requested stock."""
+        if not message.stock_names or len(message.stock_names) == 0:
+            print("Error: No stock names in message")
+            return stockprotocol.format_error("Missing stock name")
         
-        if not payload:
-            return "Error: Missing payload. Expected 'NAME'."
+        #Get stock name for the mssage object
+        stockname = message.stock_names[0]
+        print(f"Fetching current price for - {stockname}")
 
-        stockName = payload.strip()
         databaseConnection = self.GetDatabaseConnection()
         databaseCursor = databaseConnection.cursor()
 
+        #Using strftime doesn't seem to be solid way of getting time. Using stored database time instead.
         query = f"""
-        SELECT {PRICE_TABLE}.price, strftime('%H', {PRICE_TABLE}.time, 'localtime') as hour
+        SELECT {PRICE_TABLE}.price, {PRICE_TABLE}.time
         FROM {PRICE_TABLE}
         JOIN {NAME_TABLE} ON {PRICE_TABLE}.stock_id = {NAME_TABLE}.id
         WHERE {NAME_TABLE}.name = ?
-        AND {PRICE_TABLE}.time >= datetime('now', 'localtime', '-1 hour')
         ORDER BY {PRICE_TABLE}.time DESC
-        LIMIT 1;
+        LIMIT 1
         """
 
-        databaseCursor.execute(query, (stockName,))
+        print(f"Executing query...")
+        databaseCursor.execute(query, (stockname,))
         result = databaseCursor.fetchone()
+        print(f"Databse result : {result}")
         databaseConnection.close()
 
         if result:
-            price, hour = result
-            return f"{stockName}:{price}:{hour}"
-        else:
-            return f"Error: No current price found for {stockName}"
+            price, timestamp = result
+            print(f"Price : {price}, TimeStamp {timestamp}")
+            #Parse the timestamp and extract hour
+            try:
+                dateTime = datetime.strptime(timestamp, '%Y-%m-%d %H:%M')
+                hour = dateTime.hour
+
+                print(f"Parsed date time {dateTime} - hour: {hour}")
+                #Create a single price pair for current price
+                price_pair = (hour, float(price))
+
+                print(f"Price pair {hour}-{price}")
+                return stockprotocol.format_server_response(
+                    stockprotocol.MessageType.CURRENT_PRICE,
+                    stockname,
+                    price_pair
+                )
+
+            except ValueError as e:
+                return stockprotocol.format_error(f"Error parsing time stamp for {stockname}: {e}")
+            
+        return stockprotocol.format_error(f"No current price found for {stockname}")
+
+
 
     def HandleRequestWEEK(self, payload):
         pass

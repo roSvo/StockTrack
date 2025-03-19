@@ -40,6 +40,9 @@ int main(int argc, char *argv[])
     QObject::connect(&stockCollection, &StockCollection::stockNamesResponseSIGNAL,
                      &requestHandler, &RequestHandler::stockNamesResponseSLOT);
 
+    QObject::connect(&requestHandler, &RequestHandler::stockDeleteSIGNAL,
+                     &stockCollection, &StockCollection::onStockDeletedSLOT);
+
     if(requestHandler.Initialize() == false)
     {
         //Some error handling at some point.

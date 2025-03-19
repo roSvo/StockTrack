@@ -36,31 +36,35 @@ signals:
     //Update HISOTYR request prices, a situation where server send all daily data of single stock to client as single messge
     void updateMultiplePricesSIGNAL(const QString& p_name, std::vector<std::pair<int, double>> p_prices);
     //Update CURREN_PRICE where only one stock price is sent to client to be updated.
-    void updateSinglePriceSIGNAL(const QString& p_name, int p_hour, double p_price);
+    void updateSinglePriceSIGNAL(const QString& p_name, std::pair<int, double> price);
     //Client is up and running, time to create QML chrats with stock names.
     void initializeChartSIGNAL(QStringList p_stockNames);
     //Request names from StockCollection (internal call)
     void requestStockNamesSIGNAL();
+    //Send delete request to server
+    void stockDeleteSIGNAL(const QString& p_name);
+
 
 private slots:
 
     //Received TCP communication messages are hanlded here.
     void onResponseReceived(const QString& p_response);
+    void deleteStock(const QString& p_name);
 
 private:
 
     //Process history queue one by one.
-    void processNextHistoryRequest();
+    void processNextRequest(MessageType p_requestType, std::string p_stockName);
     void requestCurrentPrice();
 
     //TCP/IP Connection socket
     TCPConnect m_tcpConnect;
 
-    bool m_initialSetupComplete;
-
     //Stock list responses with all available stocks in database, these should be handled one by one,
     //since each of them requires stock history (stock prices between start and start of the day)
     QQueue<std::string> m_historyRequestQueue;
+    //Updating current names on the list requires polling each name at at time.
+    QQueue<std::string> m_currentRequestQueue;
 
     //Timer to hanlder history requests and other stock by stock calls
     QTimer* m_updateTimer;

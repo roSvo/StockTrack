@@ -59,8 +59,9 @@ public:
 public slots:
     void addStockSLOT(const QString& p_name, double p_acqisitionPrice);
     void updateMultiplePricesSLOT(const QString& p_name, std::vector<std::pair<int, double>> p_prices);
-    void updateSinglePriceSLOT(const QString& p_name, int p_hour, double p_price);
+    void updateSinglePriceSLOT(const QString& p_name, std::pair<int, double> p_price);
     void stockNamesRequestedSLOT();
+    void onStockDeletedSLOT(const QString& p_name);
 
 signals:
     void pageChanged(int p_startIndex, int p_endIndex);
@@ -69,6 +70,7 @@ signals:
     void singlePriceUpdated(QString p_name, int p_hour, double p_price);
 
     void stockNamesResponseSIGNAL(QStringList p_stockNames);
+    void stockRemovedSIGNAL(const QString& p_name);
 
 private:
 

@@ -12,7 +12,6 @@
 RequestHandler::RequestHandler(QObject* parent)
     : QObject(parent)
     , m_tcpConnect(this)
-    , m_initialSetupComplete(false)
 {
     m_updateTimer = new QTimer(this);
     m_requestTimer = new QTimer(this);
@@ -20,11 +19,13 @@ RequestHandler::RequestHandler(QObject* parent)
     connect(&m_tcpConnect, &TCPConnect::dataReceived,
             this, &RequestHandler::onResponseReceived);
 
-    connect(m_updateTimer, &QTimer::timeout,
-            this, &RequestHandler::processNextHistoryRequest);
+//    connect(m_updateTimer, &QTimer::timeout,
+//            this, &RequestHandler::processNextRequest);
 
     connect(m_requestTimer, &QTimer::timeout,
             this, &RequestHandler::requestCurrentPrice);
+
+    m_requestTimer->start(/*3'600'000*/20'000);
 }
 
 bool RequestHandler::Initialize()
@@ -53,19 +54,27 @@ void RequestHandler::onChartsInitializedSLOT()
 {
     if(m_historyRequestQueue.empty() == false)
     {
-        processNextHistoryRequest();
+        processNextRequest(MessageType::HISTORY, m_historyRequestQueue.head());
     }
 }
 
 void RequestHandler::stockNamesResponseSLOT(QStringList p_names)
 {
-
+    //Here we receive names which stock colleciton has stored to itself.
+    // So we should store these into some sort of queue from which we start to poll
+    if(p_names.empty() != true)
+    {
+        for(auto& itr : p_names)
+        {
+            m_currentRequestQueue.append(itr.toStdString());
+        }
+    }
+    processNextRequest(MessageType::CURRENT_PRICE, m_currentRequestQueue.head());
 }
 
 //RECEIVED REQUESTS
 void RequestHandler::onResponseReceived(const QString& p_response)
 {
-
     //Unify to be std string.
     std::string stringResponse = p_response.toStdString();
     StockTrack::Message message = StockTrack::Protocol::ParseMessage(stringResponse);
@@ -98,7 +107,33 @@ void RequestHandler::onResponseReceived(const QString& p_response)
             }
             case (MessageType::CURRENT_PRICE):
             {
+                if(message.m_stockNames.empty() == false)
+                {
+                    //Ensure we really have this name in current request queue
+                    auto itr = std::find(m_currentRequestQueue.begin(), m_currentRequestQueue.end(),
+                                         message.m_stockNames[0]);
+                    //Ensure that we have a valid value
+                    if(itr == m_currentRequestQueue.end())
+                    {
+                        //If not, we have not received correct data, wait for another response from server
+                        break;
+                    }
+                    //Erase this from request queue
+                    m_currentRequestQueue.erase(itr);
 
+                    //Get the first name from the stock name list. (usually only one)
+                    const std::string& stockName = message.m_stockNames[0];
+
+                    //Prices should have only one value, so we can pass what ever is at the back.
+                    emit updateSinglePriceSIGNAL(QString::fromStdString(stockName), message.m_prices.back());
+
+                    //Check if we still have more current price requests in queue.
+                    if(m_currentRequestQueue.isEmpty() == false)
+                    {
+                        //If so, process next request, with new values.)
+                        processNextRequest(MessageType::CURRENT_PRICE, m_currentRequestQueue.head());
+                    }
+                }
                 break;
             }
             case (MessageType::HISTORY):
@@ -109,16 +144,16 @@ void RequestHandler::onResponseReceived(const QString& p_response)
                     //Ensure we really have this name in history queue
                     auto itr = std::find(m_historyRequestQueue.begin(), m_historyRequestQueue.end(),
                                          message.m_stockNames[0]);
-                    //Check that we have a valid value.
+                    //Ensure that we have a valid value.
                     if(itr == m_historyRequestQueue.end())
                     {
-                        //If not, we have not received correct data, wait for another connection attempt.
+                        //If not, we have not received correct data, wait for another response froms server.
                         break;
                     }
                     //Erase this from request queue.
                     m_historyRequestQueue.erase(itr);
 
-                    //Get the first name fro mthe stock name list.
+                    //Get the first name from the stock name list. (usually the only one)
                     const std::string& stockName = message.m_stockNames[0];
 
                     //Add stock for Client.
@@ -127,39 +162,51 @@ void RequestHandler::onResponseReceived(const QString& p_response)
                     //Iterate over all prices.
                     emit updateMultiplePricesSIGNAL(QString::fromStdString(stockName), message.m_prices);
 
-                    processNextHistoryRequest();
+                    //Check if we still have more history prices in queue.
+                    if(m_historyRequestQueue.isEmpty() == false)
+                    {
+                        //If so, process next rqeuest with new value
+                        processNextRequest(MessageType::HISTORY, m_historyRequestQueue.head());
+                    }
+                }
+                break;
+            }
+            case (MessageType::REMOVE_STOCK):
+            {
+                if(message.m_stockNames.empty() == false)
+                {
+                    emit stockDeleteSIGNAL(QString::fromStdString(message.m_stockNames[0]));
                 }
                 break;
             }
             default:
             {
+                qDebug("Error received");
                 break;
             }
         }
     }
 }
 
-void RequestHandler::processNextHistoryRequest()
+void RequestHandler::deleteStock(const QString& p_name)
 {
+    std::string deleteStockRequest = StockTrack::Protocol::FormatClientRequest(
+        MessageType::REMOVE_STOCK,
+        p_name.toStdString());
 
-    qDebug() << "Sending history request : " << m_historyRequestQueue;
-    if(m_historyRequestQueue.isEmpty() == false)
-    {
-        QTimer::singleShot(1000, this, [this]()
-        {
-            std::string stockName = m_historyRequestQueue.head();
-            std::string historyRequest = StockTrack::Protocol::FormatClientRequest(
-                MessageType::HISTORY,
-                stockName);
+    m_tcpConnect.sendRequest(QString::fromStdString(deleteStockRequest));
+}
 
-            m_tcpConnect.sendRequest(QString::fromStdString(historyRequest));
-        });
-    }
-    else
+void RequestHandler::processNextRequest(MessageType p_requestType, std::string p_stockName)
+{
+    QTimer::singleShot(1000, this, [this, p_requestType, p_stockName]()
     {
-        m_initialSetupComplete = true;
-        m_requestTimer->start(3600000);
-    }
+        std::string request = StockTrack::Protocol::FormatClientRequest(
+            p_requestType,
+            p_stockName);
+
+        m_tcpConnect.sendRequest(QString::fromStdString(request));
+    });
 }
 
 void RequestHandler::requestCurrentPrice()

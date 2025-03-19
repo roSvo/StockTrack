@@ -35,6 +35,9 @@ ApplicationWindow
                 delegate: PlotChart {
                     width: parent.width
                     stockName: modelData
+                    onDeleteStock: {
+                        requestHandler.deleteStock(stockName)
+                    }
                 }
             }
         }
@@ -155,6 +158,17 @@ ApplicationWindow
             requestHandler.onChartsInitializedSLOT();
         }
     }
+    Connections
+    {
+        target: stockCollection
+        function onStockRemoved(name: string)
+        {
+            let currentModel = plotAreaRepeater.model
+            let newModel = currentModel.filter(stockName => stockName !== name)
+            plotAreaRepeater.model = newModel
+        }
+    }
+
     Component.onCompleted:
     {
         // Position window on the second monitor
